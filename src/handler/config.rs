@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(default)] // fallback to Default::default()
+#[serde(default)]
 pub struct SnapConfig {
     pub format: OutputFormat,
     pub output: Option<PathBuf>,
@@ -58,7 +58,6 @@ impl SnapConfig {
 
         let mut cfg: SnapConfig = config.try_deserialize()?;
 
-        // Override with CLI arguments
         if let Some(f) = cli_format {
             cfg.format = f;
         }
@@ -84,7 +83,6 @@ impl SnapConfig {
             cfg.max_file_size = Some(s);
         }
 
-        // Ensure ".snapcatignore" is present if ignore_files is empty
         if cfg.ignore_files.is_empty() {
             cfg.ignore_files.push(".snapcatignore".into());
         }
