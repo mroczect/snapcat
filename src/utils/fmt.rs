@@ -34,7 +34,3 @@ pub fn format_markdown(output: &SnapOutput) -> Result<String, SnapError> {
     }
     Ok(md)
 }
-
-// Tambahkan di error.rs:
-// #[error("Gagal memformat output: {msg}")]
-// FormatError { msg: String },
