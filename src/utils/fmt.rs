@@ -1,5 +1,5 @@
-use crate::types::{SnapOutput, FileEntry};
 use crate::handler::error::SnapError;
+use crate::types::{FileEntry, SnapOutput};
 use serde::Serialize;
 
 #[derive(Serialize)]
