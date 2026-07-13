@@ -25,19 +25,16 @@ use utils::fmt;
 #[instrument(skip(config))]
 pub fn snap(root: &Path, config: &SnapConfig) -> Result<SnapOutput, SnapError> {
     let root = root.canonicalize().map_err(|_| SnapError::DirNotFound { path: root.to_path_buf() })?;
-    info!("Snap dimulai di {:?}", root);
+    info!("Snap started at {:?}", root);
 
-    // Walk & bangun tree
     let (_, file_entries, tree_str) = core::tree::walk_and_build(&root, config)?;
 
-    // Tentukan thread pool
     let num_threads = config.jobs.unwrap_or_else(num_cpus::get);
     let pool = rayon::ThreadPoolBuilder::new()
         .num_threads(num_threads)
         .build()
-        .map_err(|e| SnapError::InternalError(format!("Gagal membuat thread pool: {}", e)))?;
+        .map_err(|e| SnapError::InternalError(format!("Failed to create thread pool: {}", e)))?;
 
-    // Baca isi file paralel + SHA
     let filled_entries = pool.install(|| {
         file_entries
             .par_iter()
@@ -45,7 +42,7 @@ pub fn snap(root: &Path, config: &SnapConfig) -> Result<SnapOutput, SnapError> {
                 match core::cat::read_file_content(&root, entry, config.max_file_size) {
                     Ok(e) => Some(e),
                     Err(err) => {
-                        tracing::warn!("Melewatkan file {}: {}", entry.path, err);
+                        tracing::warn!("Skipping file {}: {}", entry.path, err);
                         None
                     }
                 }
@@ -68,7 +65,7 @@ pub fn output(result: SnapOutput, config: &SnapConfig) -> Result<(), SnapError> 
     if let Some(out_path) = &config.output {
         std::fs::write(out_path, &formatted)
             .map_err(|e| SnapError::OutputCreateError { path: out_path.clone(), source: e })?;
-        info!("Output ditulis ke {:?}", out_path);
+        info!("Output written to {:?}", out_path);
     } else {
         println!("{}", formatted);
     }
