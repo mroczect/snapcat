@@ -15,9 +15,8 @@ pub fn walk_and_build(
         .map_err(|_| SnapError::DirNotFound {
             path: root.to_path_buf(),
         })?;
-    info!("Memulai walk dari {:?}", root);
+    info!("Starting walk from {:?}", root);
 
-    // Bangun walker dari config (gunakan crate::utils::ignore agar konsisten)
     let walker = crate::utils::ignore::build_walker(&root, config);
 
     let mut entries: HashMap<PathBuf, Vec<PathBuf>> = HashMap::new();
@@ -32,14 +31,12 @@ pub fn walk_and_build(
         }
         let relative = path
             .strip_prefix(&root)
-            .map_err(|_| SnapError::InternalError("Gagal strip prefix".into()))?
+            .map_err(|_| SnapError::InternalError("Failed to strip prefix".into()))?
             .to_path_buf();
 
-        // Clone untuk logging sebelum relative dipindahkan
         let relative_for_log = relative.clone();
 
         if entry.file_type().map(|ft| ft.is_dir()).unwrap_or(false) {
-            // Daftarkan direktori sebagai key (agar direktori kosong tetap muncul)
             entries.entry(relative.clone()).or_default();
             let parent = relative
                 .parent()
@@ -49,10 +46,15 @@ pub fn walk_and_build(
         } else if entry.file_type().map(|ft| ft.is_file()).unwrap_or(false) {
             files.push(relative);
         }
-        trace!("Diproses: {:?}", relative_for_log);
+        trace!("Processed: {:?}", relative_for_log);
     }
 
-    // Bangun TreeNode rekursif (tanpa unwrap)
+    // Sort all children and files for deterministic output
+    for children in entries.values_mut() {
+        children.sort();
+    }
+    files.sort();
+
     fn build_node(
         name: String,
         children_map: &HashMap<PathBuf, Vec<PathBuf>>,
@@ -63,9 +65,8 @@ pub fn walk_and_build(
             for child in child_paths {
                 let child_name = child
                     .file_name()
-                    .and_then(|s| s.to_str())
-                    .ok_or_else(|| SnapError::InternalError("Invalid file name".into()))?
-                    .to_string();
+                    .map(|s| s.to_string_lossy().into_owned())
+                    .unwrap_or_else(|| "??".to_string());
                 let child_full = base.join(child);
                 if children_map.contains_key(&child_full) {
                     children.push(build_node(child_name, children_map, &child_full)?);
@@ -87,13 +88,11 @@ pub fn walk_and_build(
 
     let root_name = root
         .file_name()
-        .and_then(|s| s.to_str())
-        .ok_or_else(|| SnapError::InternalError("Root tanpa nama".into()))?
-        .to_string();
+        .map(|s| s.to_string_lossy().into_owned())
+        .unwrap_or_else(|| "root".to_string());
 
     let tree_root = build_node(root_name, &entries, Path::new(""))?;
 
-    // Render tree string
     fn render_tree(node: &TreeNode, prefix: String, is_last: bool) -> String {
         let mut out = String::new();
         let connector = if is_last { "└── " } else { "├── " };
@@ -110,11 +109,16 @@ pub fn walk_and_build(
         out
     }
 
-    let tree_str = if tree_root.children.is_empty() {
+    let mut tree_str = if tree_root.children.is_empty() {
         format!("{}\n", tree_root.name)
     } else {
         render_tree(&tree_root, String::new(), true)
     };
+
+    // Append summary line
+    let dir_count = count_dirs(&tree_root);
+    let file_count = files.len();
+    tree_str.push_str(&format!("{} directories, {} files\n", dir_count, file_count));
 
     let file_entries = files
         .into_iter()
@@ -126,4 +130,15 @@ pub fn walk_and_build(
         .collect();
 
     Ok((tree_root, file_entries, tree_str))
+}
+
+fn count_dirs(node: &TreeNode) -> usize {
+    let mut count = 0;
+    for child in &node.children {
+        if child.kind == NodeKind::Directory {
+            count += 1;
+            count += count_dirs(child);
+        }
+    }
+    count
 }
