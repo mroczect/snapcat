@@ -12,7 +12,7 @@ pub fn build_walker(root: &Path, config: &SnapConfig) -> WalkBuilder {
         .follow_links(config.follow_symlinks);
 
     if let Some(depth) = config.max_depth {
-        builder.max_depth(Some(depth)); // ✅ bungkus Some
+        builder.max_depth(Some(depth));
     }
 
     for ign in &config.ignore_files {
