@@ -14,10 +14,8 @@ pub fn build_walker(root: &Path, config: &SnapConfig) -> WalkBuilder {
     if let Some(depth) = config.max_depth {
         builder.max_depth(Some(depth));
     }
-
     for ign in &config.ignore_files {
         builder.add_custom_ignore_filename(ign);
     }
-    builder.add_custom_ignore_filename(".snapcatignore");
     builder
 }
