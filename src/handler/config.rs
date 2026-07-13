@@ -1,10 +1,10 @@
-use serde::{Deserialize, Serialize};
-use config::{Config, File, Environment};
-use std::path::PathBuf;
 use crate::handler::error::SnapError;
+use config::{Config, Environment, File};
+use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(default)]                       // fallback to Default::default()
+#[serde(default)] // fallback to Default::default()
 pub struct SnapConfig {
     pub format: OutputFormat,
     pub output: Option<PathBuf>,
