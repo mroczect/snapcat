@@ -1,20 +1,8 @@
 use crate::handler::error::SnapError;
-use crate::types::{FileEntry, SnapOutput};
-use serde::Serialize;
-
-#[derive(Serialize)]
-struct JsonOutput {
-    tree: String,
-    files: Vec<FileEntry>,
-}
+use crate::types::SnapOutput;
 
 pub fn format_json(output: &SnapOutput) -> Result<String, SnapError> {
-    let json_out = JsonOutput {
-        tree: output.tree.clone(),
-        files: output.files.clone(),
-    };
-    serde_json::to_string_pretty(&json_out)
-        .map_err(|e| SnapError::FormatError { msg: e.to_string() })
+    serde_json::to_string_pretty(output).map_err(|e| SnapError::FormatError { msg: e.to_string() })
 }
 
 pub fn format_markdown(output: &SnapOutput) -> Result<String, SnapError> {
