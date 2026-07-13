@@ -5,7 +5,7 @@ Snapcat - Combine directory tree, file contents, and SHA256 hashes into a
 single JSON or Markdown document. Perfect for snapshots, code reviews,
 LLM context building, and auditing.
 
-Version  : 0.1.0
+Version  : 0.2.2
 License  : GPL-3.0
 Website  : https://github.com/mroczect/snapcat   (placeholder)
 Rust     : Edition 2024
