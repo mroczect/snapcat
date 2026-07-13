@@ -1,10 +1,11 @@
 use serde::Serialize;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct SnapOutput {
     pub tree: String,
     pub files: Vec<FileEntry>,
 }
+
 
 #[derive(Debug, Clone, Serialize)]
 pub struct FileEntry {
@@ -20,7 +21,7 @@ pub struct TreeNode {
     pub children: Vec<TreeNode>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, PartialEq)]
 pub enum NodeKind {
     Directory,
     File,
