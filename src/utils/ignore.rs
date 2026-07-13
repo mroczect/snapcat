@@ -1,6 +1,6 @@
+use crate::handler::config::SnapConfig;
 use ignore::WalkBuilder;
 use std::path::Path;
-use crate::handler::config::SnapConfig;
 
 pub fn build_walker(root: &Path, config: &SnapConfig) -> WalkBuilder {
     let mut builder = WalkBuilder::new(root);
@@ -12,7 +12,7 @@ pub fn build_walker(root: &Path, config: &SnapConfig) -> WalkBuilder {
         .follow_links(config.follow_symlinks);
 
     if let Some(depth) = config.max_depth {
-        builder.max_depth(Some(depth));   // ✅ bungkus Some
+        builder.max_depth(Some(depth)); // ✅ bungkus Some
     }
 
     for ign in &config.ignore_files {
