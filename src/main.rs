@@ -8,11 +8,9 @@ use tracing_subscriber::{EnvFilter, fmt};
 #[command(name = "snapcat")]
 #[command(about = "Combine tree + cat + SHA256 into JSON or Markdown", long_about = None)]
 struct Cli {
-    /// Target directory
     #[arg(default_value = ".")]
     path: PathBuf,
 
-    /// Output format
     #[arg(short = 'f', long = "format", value_enum)]
     format: Option<OutputFormat>,
 
@@ -46,10 +44,8 @@ struct Cli {
 }
 
 fn main() -> miette::Result<()> {
-    let env_filter =
+    let default_filter =
         EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("snapcat=info"));
-    fmt().with_env_filter(env_filter).init();
-
     let cli = Cli::parse();
     let config = SnapConfig::load(
         cli.format,
@@ -61,6 +57,13 @@ fn main() -> miette::Result<()> {
         cli.jobs,
         cli.max_file_size,
     )?;
+    let env_filter = if config.verbose {
+        EnvFilter::new("snapcat=trace")
+    } else {
+        default_filter
+    };
+
+    fmt().with_env_filter(env_filter).init();
 
     let result = snap(&cli.path, &config)?;
     output(result, &config)?;
