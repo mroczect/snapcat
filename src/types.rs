@@ -14,6 +14,7 @@ pub struct FileEntry {
 }
 
 #[derive(Debug, Clone, Serialize)]
+#[allow(dead_code)]
 pub struct TreeNode {
     pub name: String,
     pub kind: NodeKind,
@@ -21,6 +22,7 @@ pub struct TreeNode {
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
+#[allow(dead_code)]
 pub enum NodeKind {
     Directory,
     File,
