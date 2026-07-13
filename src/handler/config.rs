@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use crate::handler::error::SnapError;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]                       // fallback to Default::default()
 pub struct SnapConfig {
     pub format: OutputFormat,
     pub output: Option<PathBuf>,
@@ -16,7 +17,8 @@ pub struct SnapConfig {
     pub jobs: Option<usize>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, clap::ValueEnum)]  // 👈 tambahkan ValueEnum
+#[derive(Debug, Clone, Serialize, Deserialize, clap::ValueEnum)]
+#[serde(rename_all = "lowercase")]
 pub enum OutputFormat {
     Json,
     Markdown,
@@ -39,20 +41,74 @@ impl Default for SnapConfig {
 }
 
 impl SnapConfig {
-    pub fn load(cli_format: Option<OutputFormat>, cli_output: Option<PathBuf>, cli_verbose: bool) -> Result<Self, SnapError> {
-        let s = Config::builder()
+    pub fn load(
+        cli_format: Option<OutputFormat>,
+        cli_output: Option<PathBuf>,
+        cli_verbose: bool,
+        cli_max_depth: Option<usize>,
+        cli_include_hidden: bool,
+        cli_follow_symlinks: bool,
+        cli_jobs: Option<usize>,
+        cli_max_file_size: Option<u64>,
+    ) -> Result<Self, SnapError> {
+        let config = Config::builder()
             .add_source(File::with_name(".snapcatconfig").required(false))
             .add_source(Environment::with_prefix("SNAPCAT").separator("__"))
-            .build()
-            .map_err(|e| SnapError::ConfigError { msg: e.to_string() })?;
+            .build()?;
 
-        let mut cfg: SnapConfig = s.try_deserialize()
-            .map_err(|e| SnapError::ConfigError { msg: e.to_string() })?;
+        let mut cfg: SnapConfig = config.try_deserialize()?;
 
-        if let Some(f) = cli_format { cfg.format = f; }
-        if let Some(o) = cli_output { cfg.output = Some(o); }
-        if cli_verbose { cfg.verbose = true; }
+        // Override with CLI arguments
+        if let Some(f) = cli_format {
+            cfg.format = f;
+        }
+        if let Some(o) = cli_output {
+            cfg.output = Some(o);
+        }
+        if cli_verbose {
+            cfg.verbose = true;
+        }
+        if let Some(d) = cli_max_depth {
+            cfg.max_depth = Some(d);
+        }
+        if cli_include_hidden {
+            cfg.include_hidden = true;
+        }
+        if cli_follow_symlinks {
+            cfg.follow_symlinks = true;
+        }
+        if let Some(j) = cli_jobs {
+            cfg.jobs = Some(j);
+        }
+        if let Some(s) = cli_max_file_size {
+            cfg.max_file_size = Some(s);
+        }
 
+        // Ensure ".snapcatignore" is present if ignore_files is empty
+        if cfg.ignore_files.is_empty() {
+            cfg.ignore_files.push(".snapcatignore".into());
+        }
+
+        cfg.validate()?;
         Ok(cfg)
+    }
+
+    fn validate(&self) -> Result<(), SnapError> {
+        if let Some(0) = self.max_depth {
+            return Err(SnapError::InvalidConfig {
+                msg: "max_depth must not be 0. Use None for unlimited.".into(),
+            });
+        }
+        if let Some(0) = self.max_file_size {
+            return Err(SnapError::InvalidConfig {
+                msg: "max_file_size must not be 0. Use None for unlimited.".into(),
+            });
+        }
+        if let Some(0) = self.jobs {
+            return Err(SnapError::InvalidConfig {
+                msg: "jobs must not be 0. Use None or a value >= 1.".into(),
+            });
+        }
+        Ok(())
     }
 }
