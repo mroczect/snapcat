@@ -9,7 +9,6 @@ pub mod handler {
 pub mod utils {
     pub mod fmt;
     pub mod ignore;
-    pub mod io;
 }
 pub mod types;
 
