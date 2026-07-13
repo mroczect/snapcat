@@ -1,16 +1,7 @@
-pub mod core {
-    pub mod cat;
-    pub mod tree;
-}
-pub mod handler {
-    pub mod config;
-    pub mod error;
-}
-pub mod utils {
-    pub mod fmt;
-    pub mod ignore;
-}
+pub mod core;
+pub mod handler;
 pub mod types;
+pub mod utils;
 
 use rayon::prelude::*;
 use std::path::Path;
@@ -28,7 +19,7 @@ pub fn snap(root: &Path, config: &SnapConfig) -> Result<SnapOutput, SnapError> {
     })?;
     info!("Snap started at {:?}", root);
 
-    let (_, file_entries, tree_str) = core::tree::walk_and_build(&root, config)?;
+    let (tree_str, file_entries) = core::tree::walk_and_build(&root, config)?;
 
     let num_threads = config.jobs.unwrap_or_else(num_cpus::get);
     let pool = rayon::ThreadPoolBuilder::new()
