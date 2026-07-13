@@ -1,19 +1,17 @@
-use miette::{Diagnostic, SourceSpan};
+use miette::Diagnostic;
 use thiserror::Error;
 
 #[derive(Error, Debug, Diagnostic)]
 pub enum SnapError {
-    #[error("Gagal membaca file ignore '{path}'")]
-    #[diagnostic(code(snapcat::ignore::read), help("pastikan file ada dan dapat dibaca"))]
+    #[error("Failed to read ignore file '{path}'")]
+    #[diagnostic(code(snapcat::ignore::read), help("ensure the file exists and is readable"))]
     IgnoreFileRead {
         path: String,
         #[source]
         source: std::io::Error,
-        #[label("terjadi saat membuka file ini")]
-        loc: SourceSpan,
     },
 
-    #[error("Gagal membaca file '{path}'")]
+    #[error("Failed to read file '{path}'")]
     #[diagnostic(code(snapcat::io::read))]
     FileReadError {
         path: std::path::PathBuf,
@@ -21,7 +19,7 @@ pub enum SnapError {
         source: std::io::Error,
     },
 
-    #[error("File terlalu besar '{path}': {size} bytes (max: {max})")]
+    #[error("File too large '{path}': {size} bytes (max: {max})")]
     #[diagnostic(code(snapcat::io::file_too_large))]
     FileTooLarge {
         path: std::path::PathBuf,
@@ -29,19 +27,19 @@ pub enum SnapError {
         max: u64,
     },
 
-    #[error("Direktori '{path}' tidak ditemukan")]
+    #[error("Directory '{path}' not found")]
     #[diagnostic(code(snapcat::tree::not_found))]
     DirNotFound {
         path: std::path::PathBuf,
     },
 
-    #[error("Direktori '{path}' bukan sebuah direktori")]
+    #[error("Path '{path}' is not a directory")]
     #[diagnostic(code(snapcat::tree::not_a_directory))]
     NotADirectory {
         path: std::path::PathBuf,
     },
 
-    #[error("Gagal membuat output file '{path}'")]
+    #[error("Failed to create output file '{path}'")]
     #[diagnostic(code(snapcat::output::create))]
     OutputCreateError {
         path: std::path::PathBuf,
@@ -49,19 +47,32 @@ pub enum SnapError {
         source: std::io::Error,
     },
 
-    #[error("Format output tidak didukung: {0}")]
+    #[error("Unsupported output format: {0}")]
     #[diagnostic(code(snapcat::format::unsupported))]
     UnsupportedFormat(String),
 
-    #[error("Konfigurasi error: {msg}")]
-    #[diagnostic(code(snapcat::config))]
-    ConfigError { msg: String },
+    #[error("Failed to load configuration")]
+    #[diagnostic(code(snapcat::config::load), help("Check .snapcatconfig or SNAPCAT_* environment variables."))]
+    ConfigLoadError {
+        #[source]
+        source: config::ConfigError,
+    },
 
-    #[error("Gagal memformat output: {msg}")]
+    #[error("Invalid configuration: {msg}")]
+    #[diagnostic(code(snapcat::config::invalid), help("Refer to the documentation for allowed values."))]
+    InvalidConfig { msg: String },
+
+    #[error("Failed to format output: {msg}")]
     #[diagnostic(code(snapcat::format::internal))]
     FormatError { msg: String },
 
-    #[error("Internal error: {0}")]  // ✅ perbaiki: pakai {0}
+    #[error("Internal error: {0}")]
     #[diagnostic(code(snapcat::internal))]
     InternalError(String),
+}
+
+impl From<config::ConfigError> for SnapError {
+    fn from(e: config::ConfigError) -> Self {
+        SnapError::ConfigLoadError { source: e }
+    }
 }
