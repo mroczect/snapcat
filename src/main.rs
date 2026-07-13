@@ -1,8 +1,8 @@
 use clap::Parser;
+use snapcat::handler::config::{OutputFormat, SnapConfig};
+use snapcat::{output, snap};
 use std::path::PathBuf;
-use snapcat::handler::config::{SnapConfig, OutputFormat};
-use snapcat::{snap, output};
-use tracing_subscriber::{fmt, EnvFilter};
+use tracing_subscriber::{EnvFilter, fmt};
 
 #[derive(Parser)]
 #[command(name = "snapcat")]
@@ -46,8 +46,8 @@ struct Cli {
 }
 
 fn main() -> miette::Result<()> {
-    let env_filter = EnvFilter::try_from_default_env()
-        .unwrap_or_else(|_| EnvFilter::new("snapcat=info"));
+    let env_filter =
+        EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("snapcat=info"));
     fmt().with_env_filter(env_filter).init();
 
     let cli = Cli::parse();
