@@ -4,7 +4,10 @@ use thiserror::Error;
 #[derive(Error, Debug, Diagnostic)]
 pub enum SnapError {
     #[error("Failed to read ignore file '{path}'")]
-    #[diagnostic(code(snapcat::ignore::read), help("ensure the file exists and is readable"))]
+    #[diagnostic(
+        code(snapcat::ignore::read),
+        help("ensure the file exists and is readable")
+    )]
     IgnoreFileRead {
         path: String,
         #[source]
@@ -29,15 +32,11 @@ pub enum SnapError {
 
     #[error("Directory '{path}' not found")]
     #[diagnostic(code(snapcat::tree::not_found))]
-    DirNotFound {
-        path: std::path::PathBuf,
-    },
+    DirNotFound { path: std::path::PathBuf },
 
     #[error("Path '{path}' is not a directory")]
     #[diagnostic(code(snapcat::tree::not_a_directory))]
-    NotADirectory {
-        path: std::path::PathBuf,
-    },
+    NotADirectory { path: std::path::PathBuf },
 
     #[error("Failed to create output file '{path}'")]
     #[diagnostic(code(snapcat::output::create))]
@@ -52,14 +51,20 @@ pub enum SnapError {
     UnsupportedFormat(String),
 
     #[error("Failed to load configuration")]
-    #[diagnostic(code(snapcat::config::load), help("Check .snapcatconfig or SNAPCAT_* environment variables."))]
+    #[diagnostic(
+        code(snapcat::config::load),
+        help("Check .snapcatconfig or SNAPCAT_* environment variables.")
+    )]
     ConfigLoadError {
         #[source]
         source: config::ConfigError,
     },
 
     #[error("Invalid configuration: {msg}")]
-    #[diagnostic(code(snapcat::config::invalid), help("Refer to the documentation for allowed values."))]
+    #[diagnostic(
+        code(snapcat::config::invalid),
+        help("Refer to the documentation for allowed values.")
+    )]
     InvalidConfig { msg: String },
 
     #[error("Failed to format output: {msg}")]
