@@ -1,30 +1,32 @@
 pub mod core {
-    pub mod tree;
     pub mod cat;
+    pub mod tree;
 }
 pub mod handler {
-    pub mod error;
     pub mod config;
+    pub mod error;
 }
 pub mod utils {
-    pub mod ignore;
     pub mod fmt;
+    pub mod ignore;
     pub mod io;
 }
 pub mod types;
 
-use std::path::Path;
 use rayon::prelude::*;
+use std::path::Path;
 use tracing::{info, instrument};
 
-use handler::config::{SnapConfig, OutputFormat};
+use handler::config::{OutputFormat, SnapConfig};
 use handler::error::SnapError;
 use types::SnapOutput;
 use utils::fmt;
 
 #[instrument(skip(config))]
 pub fn snap(root: &Path, config: &SnapConfig) -> Result<SnapOutput, SnapError> {
-    let root = root.canonicalize().map_err(|_| SnapError::DirNotFound { path: root.to_path_buf() })?;
+    let root = root.canonicalize().map_err(|_| SnapError::DirNotFound {
+        path: root.to_path_buf(),
+    })?;
     info!("Snap started at {:?}", root);
 
     let (_, file_entries, tree_str) = core::tree::walk_and_build(&root, config)?;
@@ -63,8 +65,10 @@ pub fn output(result: SnapOutput, config: &SnapConfig) -> Result<(), SnapError> 
     };
 
     if let Some(out_path) = &config.output {
-        std::fs::write(out_path, &formatted)
-            .map_err(|e| SnapError::OutputCreateError { path: out_path.clone(), source: e })?;
+        std::fs::write(out_path, &formatted).map_err(|e| SnapError::OutputCreateError {
+            path: out_path.clone(),
+            source: e,
+        })?;
         info!("Output written to {:?}", out_path);
     } else {
         println!("{}", formatted);
