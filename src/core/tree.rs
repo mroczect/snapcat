@@ -46,7 +46,6 @@ pub fn walk_and_build(
         trace!("Processed: {:?}", relative_for_log);
     }
 
-    // Sort all children and files for deterministic output
     for children in entries.values_mut() {
         children.sort();
     }
@@ -112,7 +111,6 @@ pub fn walk_and_build(
         render_tree(&tree_root, String::new(), true)
     };
 
-    // Append summary line
     let dir_count = count_dirs(&tree_root);
     let file_count = files.len();
     tree_str.push_str(&format!(
