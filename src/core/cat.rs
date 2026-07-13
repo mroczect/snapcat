@@ -1,8 +1,8 @@
-use std::path::Path;
-use sha2::{Sha256, Digest};
 use crate::handler::error::SnapError;
 use crate::types::FileEntry;
-use tracing::{trace, instrument};
+use sha2::{Digest, Sha256};
+use std::path::Path;
+use tracing::{instrument, trace};
 
 #[instrument]
 pub fn read_file_content(
@@ -14,11 +14,10 @@ pub fn read_file_content(
 
     // Cek ukuran file jika ada batasan
     if let Some(max) = max_size {
-        let metadata = std::fs::metadata(&full_path)
-            .map_err(|e| SnapError::FileReadError {
-                path: full_path.clone(),
-                source: e,
-            })?;
+        let metadata = std::fs::metadata(&full_path).map_err(|e| SnapError::FileReadError {
+            path: full_path.clone(),
+            source: e,
+        })?;
         if metadata.len() > max {
             return Err(SnapError::FileTooLarge {
                 path: full_path.clone(),
@@ -28,17 +27,19 @@ pub fn read_file_content(
         }
     }
 
-    let content = std::fs::read_to_string(&full_path)
-        .map_err(|e| SnapError::FileReadError {
-            path: full_path.clone(),
-            source: e,
-        })?;
+    let content = std::fs::read_to_string(&full_path).map_err(|e| SnapError::FileReadError {
+        path: full_path.clone(),
+        source: e,
+    })?;
 
     let mut hasher = Sha256::new();
     hasher.update(content.as_bytes());
     let hash_bytes = hasher.finalize();
     // Konversi byte array ke string heksadesimal secara manual
-    let hash = hash_bytes.iter().map(|b| format!("{:02x}", b)).collect::<String>();
+    let hash = hash_bytes
+        .iter()
+        .map(|b| format!("{:02x}", b))
+        .collect::<String>();
 
     trace!("Baca {} => hash {}", entry.path, hash);
     Ok(FileEntry {
