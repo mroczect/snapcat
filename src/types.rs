@@ -6,7 +6,6 @@ pub struct SnapOutput {
     pub files: Vec<FileEntry>,
 }
 
-
 #[derive(Debug, Clone, Serialize)]
 pub struct FileEntry {
     pub path: String,
