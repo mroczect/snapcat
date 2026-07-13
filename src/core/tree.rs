@@ -1,20 +1,18 @@
+use crate::handler::config::SnapConfig;
+use crate::handler::error::SnapError;
+use crate::types::{FileEntry, NodeKind, TreeNode};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use crate::types::{TreeNode, NodeKind, FileEntry};
-use crate::handler::error::SnapError;
-use crate::handler::config::SnapConfig;
-use tracing::{trace, info, instrument};
+use tracing::{info, instrument, trace};
 
 #[instrument(skip(root, config))]
 pub fn walk_and_build(
     root: &Path,
     config: &SnapConfig,
 ) -> Result<(TreeNode, Vec<FileEntry>, String), SnapError> {
-    let root = root
-        .canonicalize()
-        .map_err(|_| SnapError::DirNotFound {
-            path: root.to_path_buf(),
-        })?;
+    let root = root.canonicalize().map_err(|_| SnapError::DirNotFound {
+        path: root.to_path_buf(),
+    })?;
     info!("Starting walk from {:?}", root);
 
     let walker = crate::utils::ignore::build_walker(&root, config);
@@ -23,8 +21,7 @@ pub fn walk_and_build(
     let mut files: Vec<PathBuf> = Vec::new();
 
     for result in walker.build() {
-        let entry = result
-            .map_err(|e| SnapError::InternalError(format!("Walk error: {}", e)))?;
+        let entry = result.map_err(|e| SnapError::InternalError(format!("Walk error: {}", e)))?;
         let path = entry.path().to_path_buf();
         if path == root {
             continue;
@@ -118,7 +115,10 @@ pub fn walk_and_build(
     // Append summary line
     let dir_count = count_dirs(&tree_root);
     let file_count = files.len();
-    tree_str.push_str(&format!("{} directories, {} files\n", dir_count, file_count));
+    tree_str.push_str(&format!(
+        "{} directories, {} files\n",
+        dir_count, file_count
+    ));
 
     let file_entries = files
         .into_iter()
