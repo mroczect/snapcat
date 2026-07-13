@@ -1,0 +1,288 @@
+SNAPCAT
+=======
+
+Combine directory tree, file contents (cat), and SHA256 hashes into a single
+JSON or Markdown document.  Snapcat walks a directory tree, respects ignore
+rules, reads file contents, computes cryptographic hashes, and outputs a
+structured report – perfect for snapshots, code reviews, or feeding data to
+LLMs.
+
+Version: 0.1.0
+License: GPL-3.0
+Repository: https://github.com/mroczect/snapcat   (placeholder)
+
+
+TABLE OF CONTENTS
+-----------------
+
+1.  FEATURES OVERVIEW
+2.  INSTALLATION
+3.  QUICK START
+4.  COMMAND-LINE USAGE
+5.  CONFIGURATION
+6.  OUTPUT FORMATS
+7.  LIBRARY USAGE (Rust)
+8.  ERROR HANDLING
+9.  EXAMPLES
+10. LICENSE
+
+
+=============================================================================
+1. FEATURES OVERVIEW
+=============================================================================
+
+  +-----------------------------+--------------------------------------------+
+  | Feature                     | Description                                |
+  +-----------------------------+--------------------------------------------+
+  | Directory tree rendering    | Visual representation of file hierarchy    |
+  | File content capture        | Reads text content of files (up to a       |
+  |                             | configurable size limit)                   |
+  | SHA256 hashing              | Computes SHA-256 hash of every file        |
+  | Dual output format          | JSON (structured) or Markdown (human)      |
+  | Ignore rules                | Respects .gitignore, .snapcatignore, and   |
+  |                             | custom ignore files                        |
+  | Configurable                | CLI flags, .snapcatconfig file, or         |
+  |                             | SNAPCAT_* environment variables            |
+  | Parallel processing         | Uses Rayon for fast multi-threaded file    |
+  |                             | reading                                    |
+  | Verbose logging             | Built-in tracing for debugging             |
+  | Rich error diagnostics      | Powered by miette for user-friendly errors |
+  | Library + binary            | Use as a standalone CLI or integrate the   |
+  |                             | library into your own Rust project         |
+  +-----------------------------+--------------------------------------------+
+
+
+=============================================================================
+2. INSTALLATION
+=============================================================================
+
+Snapcat is not yet published on crates.io.  You can build from source or use
+a pre-compiled binary from the GitHub Releases page.
+
+2.1 Pre-built binary
+
+  Download the appropriate archive for your platform from the Releases page
+  and extract it.  On Linux (x86_64):
+
+    curl -LO https://github.com/mroczect/snapcat/releases/download/cli-v0.1.0/snapcat-x86_64-linux.tar.gz
+    tar -xzf snapcat-x86_64-linux.tar.gz
+    sudo install -m 755 snapcat /usr/local/bin/
+    snapcat --help
+
+  macOS (Intel or Apple Silicon) archives are also provided.
+
+2.2 Build from source
+
+  Requirements: Rust (edition 2024 or later), Git.
+
+    git clone https://github.com/mroczect/snapcat.git
+    cd snapcat
+    cargo build --release
+    ./target/release/snapcat --help
+
+2.3 Install via cargo 
+
+    cargo install --git https://github.com/mroczect/snapcat.git
+
+
+=============================================================================
+3. QUICK START
+=============================================================================
+
+  Run Snapcat against the current directory with default settings:
+
+    snapcat
+
+  This prints a JSON document containing the directory tree and the content +
+  SHA256 of every file (respecting .gitignore).  To save the result to a file:
+
+    snapcat -o snapshot.json
+
+  For a human-readable Markdown report:
+
+    snapcat -f markdown -o report.md
+
+
+=============================================================================
+4. COMMAND-LINE USAGE
+=============================================================================
+
+  snapcat [OPTIONS] [PATH]
+
+  PATH                  Target directory (default: current directory).
+
+  Options:
+    -f, --format <FMT>  Output format: json or markdown (default: json)
+    -o, --output <FILE> Write output to FILE instead of stdout
+    -v, --verbose       Enable verbose (trace) logging
+    --max-depth <N>     Maximum directory depth (0 = unlimited)
+    --include-hidden    Include hidden files and directories
+    --follow-symlinks   Follow symbolic links (may loop)
+    -j, --jobs <N>      Number of parallel threads (default: number of CPUs)
+    --max-file-size <N> Maximum file size in bytes to read (default: 10 MB)
+
+  Examples:
+
+    snapcat -f markdown -o full.md
+    snapcat --max-depth 3 --include-hidden
+    snapcat -j 4 --max-file-size 5242880   # 5 MB
+
+
+=============================================================================
+5. CONFIGURATION
+=============================================================================
+
+Snapcat can be configured via a file, environment variables, and CLI flags.
+CLI flags take highest precedence, then environment variables, then the
+config file.
+
+5.1 Configuration file: .snapcatconfig
+
+  Place a file named .snapcatconfig in the current directory (or home
+  directory, etc., depending on the `config` crate search path).  It can
+  contain any of the following keys:
+
+    format: "json" | "markdown"
+    output: "/path/to/output"
+    max_depth: 5
+    include_hidden: true | false
+    follow_symlinks: true | false
+    ignore_files: [".snapcatignore", ".myignore"]
+    max_file_size: 10000000
+    verbose: true | false
+    jobs: 4
+
+  If the file is absent, sensible defaults are used.
+
+5.2 Environment variables
+
+  Prefix SNAPCAT__ and use double underscores as separators:
+
+    SNAPCAT__FORMAT=markdown
+    SNAPCAT__OUTPUT=/tmp/snap.md
+    SNAPCAT__MAX_DEPTH=3
+    SNAPCAT__INCLUDE_HIDDEN=true
+
+  Note: SNAPCAT__INCLUDE_HIDDEN=true sets include_hidden to true, etc.
+
+
+=============================================================================
+6. OUTPUT FORMATS
+=============================================================================
+
+6.1 JSON
+
+  A pretty-printed JSON object with two keys:
+
+    {
+      "tree": "project/\n├── src/\n│   ├── main.rs\n│   └── lib.rs\n...",
+      "files": [
+        {
+          "path": "src/main.rs",
+          "content": "fn main() { ... }",
+          "sha256": "e3b0c442..."
+        }
+      ]
+    }
+
+  The "tree" field contains a rendered directory tree (same style as the
+  Unix `tree` command).  The "files" array contains an entry for every
+  regular file that was successfully read.
+
+6.2 Markdown
+
+  A human-readable document:
+
+    # Snapcat Output
+
+    ```
+    project/
+    ├── src/
+    │   ├── main.rs
+    │   └── lib.rs
+    ```
+
+    ## Files
+
+    ### src/main.rs
+    ```
+    fn main() { ... }
+    ```
+    SHA256: `e3b0c442...`
+
+  Each file gets its own section with the content in a code block and the
+  SHA256 hash printed below.
+
+
+=============================================================================
+7. LIBRARY USAGE (Rust)
+=============================================================================
+
+Add Snapcat as a dependency in your Cargo.toml:
+
+  [dependencies]
+  snapcat = { git = "https://github.com/mroczect/snapcat.git" }
+
+Then use the library in your code:
+
+  use snapcat::handler::config::{SnapConfig, OutputFormat};
+  use snapcat::{snap, output};
+
+  let config = SnapConfig::default();
+  let result = snap(Path::new("./my_project"), &config)?;
+  output(result, &config)?;
+
+See the source documentation for more details.
+
+
+=============================================================================
+8. ERROR HANDLING
+=============================================================================
+
+Snapcat uses `miette` for rich error reporting.  Common errors include:
+
+  - DirectoryNotFound       – the given path does not exist or is not a
+                              directory.
+  - FileReadError           – a file could not be read (permissions, etc.).
+  - FileTooLarge            – a file exceeded max_file_size.
+  - ConfigLoadError         – .snapcatconfig could not be parsed.
+  - InvalidConfig           – a configuration value is invalid.
+  - OutputCreateError       – the output file could not be written.
+
+All errors include a diagnostic code (e.g., snapcat::io::read) and, where
+possible, a helpful suggestion.
+
+
+=============================================================================
+9. EXAMPLES
+=============================================================================
+
+  - Generate a full JSON snapshot of a Rust project, excluding hidden files:
+
+      snapcat -o project.json
+
+  - Create a Markdown document that you can feed to an LLM:
+
+      snapcat -f markdown --max-file-size 1048576 -o context.md
+
+  - Restrict depth to 2 and ignore any .snapcatignore file:
+
+      snapcat --max-depth 2 --ignore-files ""
+
+
+=============================================================================
+10. LICENSE
+=============================================================================
+
+This program is free software licensed under the GNU General Public License
+v3.0 (GPL-3.0).
+
+  Copyright (C) 2026 mroczect
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <https://www.gnu.org/licenses/>.
