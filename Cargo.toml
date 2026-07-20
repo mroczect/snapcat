@@ -3,6 +3,17 @@ name = "snapcat"
 version = "0.2.2"
 edition = "2024"
 
+authors = ["mroczect"]
+description = "Combine directory tree, file contents, and SHA256 hashes into a single JSON or Markdown document. Perfect for snapshots, code reviews, LLM context building, and auditing."
+license = "GPL-3.0"
+repository = "https://github.com/mroczect/snapcat"
+homepage = "https://github.com/mroczect/snapcat"
+documentation = "https://docs.rs/snapcat"
+readme = "README.md"
+keywords = ["snapshot", "tree", "markdown", "json", "code-review"]
+categories = ["command-line-utilities", "filesystem", "development-tools"]
+exclude = ["/target", "/.git", "/.github", "/benches", "/examples", "/tests"]
+
 [dependencies]
 clap = { version = "4.6.1", features = ["derive"] }
 config = "0.15.25"
